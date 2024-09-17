@@ -76,7 +76,7 @@ public class ConsumerWithShutdown {
         finally
         {
             consumer.close();
-            log.info("the consumer is now gracefully shutdown.")
+            log.info("the consumer is now gracefully shutdown.");
         }
 
     }

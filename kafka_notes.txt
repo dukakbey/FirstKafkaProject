@@ -1,0 +1,93 @@
+KAFKA NOTES
+
+* Microservis mimarisine geçildikten sonra uygulamaların birbirleriyle haberleşmesi karmaşık bir hale gelmeye bailadı:
+    - hangi protokolle haberleşecekler TCP? UDP? HTTP? FTP?.
+    - bilgi akışı hangi formatta yapılacak. Birinin yolladığını karşı taraf nasıl alacak. Günümüzde xml,csc,json gibi birçok format mevcuttur.
+    - yeni çıkan monitoring,audit,analytics,reporting,mail service komponentlerinin kullanımı
+
+* Yanılan zorluklara çözüm olarak message bus kullanan "Event Driven Architecture" yapısı ortaya çıktı.:
+Bunların en popüleri KAFKA'dır:
+    - Apache KAFKA bir açık kaynak Stream processing platform'dur.
+    - Distributed yani dağıtık yapıdadır. Bu sayede saklı tuttuğu event'lerin kaybolmaması için bir çok özellik sunuyor:
+        - verilerin sistemde tutulması ve büyüklüğünü biz kendimiz seçiyoruz. (100 gb sonrası eskiler silinsin veya 1 ay tut ve sil ..)
+    - Yüksek seviyede ölçeklenebilirdir. Yüzlerce server'lardan oluşan kafka ağı kurulabilir. saniyede milyonlarca veri işlenebilir.
+    - Fraud Anomaly detection, Recommendation engine,Monitoring,realtime streaming .. gibi amaçlarla kullanılabilir.
+    - Kafka'nın "dağıtık mesajlaşma mimarisi" olarak tanımlanması, mesajların birden fazla makineye dağıtıldığı, ölçeklenebilir, dayanıklı ve yüksek performanslı bir şekilde veri akışının yönetildiği bir sistem olduğunu ifade eder. Bu mimari, mesajların üretilmesi (producer), işlenmesi ve tüketilmesi (consumer) süreçlerinin bağımsız bileşenler üzerinde paralel olarak çalışmasını sağlar.
+    - kafka'ya veri yazılması 3 aşamadan oluşur:
+        1- veri göndermek
+        2- verinin lider partition'a ulaşıp saklanması
+        3- son olarak lider partion'ın bu veriyi diğer kopyalara aktarması.
+    - Kafkaya veri yazarken 3 seçenek var:
+        - acks=0 bu en hızlısı ama en riskli olanı: kafkaya gönder ama cevabı beklemeden devam et.
+        - acks=1 orta derece hızlı ve güvenli, mesaj kaybolma riski çok az: kafkaya gönder ve sadece lider'e yazana kadar bekle.
+        - acks=-1 en güvenli ama en yavaş olanı.
+
+* Broker:
+    - her kafka cluster bir veya daha fazka broker'dan oluşur. 
+    - Her broker birbirine bağlı olarak çalışır.
+    - Broker'larda kafkaya gönderdiğimiz mesajlar saklanır ve işlenir. Mesajlar harddisc'te saklanır.Veri saklamak için bilgisayar hafızası kullanılmaz.
+    - Veriler, log dosyaları olarak disk tabanlı olarak tutulur. Her partition, bir dizi log dosyası içerir ve gelen veriler bu log dosyalarına sıralı olarak eklenir (append-only logs).
+    - broker sayısı replikasyon sayısına eşit veya büyük olmalıdır.
+    - canlı ortamda en az 3 server ile çalışmak önemlidir.
+    
+* Zookeeper:
+    - Apache lisanslı açık kaynak kodlu bir yazılımdır.
+    - kafka bunu tüm broker'ları yönetmesi için kullanır. 
+    - Gönderilen veriler burada saklanmaz.
+    - Broker'ları koordine eder.
+    - Lider partition seçimini yapar.
+    - Yeni veya çökmüş broker'ların veya eklenen ,silinen topic'lerin keşfedilmesi.
+
+* Producer:
+    - 
+
+* Consumer:
+    - 
+
+* Topic:
+    - Kafka'da mesajlar Topic adı verilen kutucuklardan okunur. Her servis bu kutucuklardan mesajları okuyabilir.
+    - Topic'ler broker'larda saklanır.
+    - partition'lardan oluşan bir yapıdır.
+    - gelen veri topic'e değil de içindeki partition'lara yazılır.
+    - partition sayısını biz belirliyoruz.
+
+* Partition:
+    - Log prensibini kullanır yani yazdıklarımız sürekli arkaya eklenir.
+    - Veriler sonsuza kadar saklanmaz. default olarak saklanma süresi 7 gündür.
+    - Partition'daki her mesaja offset tanımlanarak okunur.
+    avantajları:
+        - yazılan verilerin özelliklerine göre toplanması (aggregation)
+        - verilerin sıralı bir şekilde toplanması.
+        - paralelizm ile verilerin hızlı okunmasını sağlar.
+        - veriler daha verimli şekilde saklanır.
+    - default olarak "Round Robin" Yöntemini kullanır::
+        - Gelen her mesaj partion'lara dağıtılarak gider. Aynı partition'a 2 mesaj üst üste girmez.
+        - key değeri ile kategori belirterek yollanırsa aynı partion'a yazılır.
+    - partition sayısı yükseldikçe paralelizm sayısı artıyor ve performans yükseliyor.
+    - Bir partition'dan aynı anda aynı kimliğe sahip yalnızca 1 Consumer okuyabilir.
+    - replikasyon faktörü kaçsa partition'lar o kadar çoğaltılır.
+    - Her partition'un replikalarına aynı anda veri yazılmıyor. Lider partition'a yazılır diğerleri ordan okur.
+    - Herhangi bir durumda lider partition çökerse kafka yeni lider ataması yapar.
+
+* replikasyon:
+    - split brain (hata sonucu bağımsız çalışan partition'lar) oluşumunu engellemek için tek sayılarda yapılmalıdır.
+    - broker sayısı replikasyon sayısına eşit veya büyük olmalıdır.
+    - split brain olmaması için  Quorum sayısı = server sayısı/2 + 1
+    - replikasyon faktörü kaçsa partition'lar o kadar çoğaltılır.
+    - Her partition'un replikalarına aynı anda veri yazılmıyor. Lider partition'a yazılır diğerleri ordan okur.
+
+
+* veri okuma:
+    - hangi offset'te kaldığı Zookeeper'da tutuluyor.
+    - sıra:
+        1- Event oku (offset 0)
+        2- işlemini yap
+        3- Commit et (offset 0)
+        4- Bir sonraki okunacak offset 1 oluyor.
+    - veri okuma stratejileri vardır:
+        - At most once (en fazla 1 kere): mesaj kaybolma riski fazla
+        - At least once (en az 1 kere): commit işlemini işimiz bittikten sonra yapıyoruz , mesaj kaybolma riski az
+        - Exactly once (tam 1 kere): transaction işlemi başlatılır ve performansa büyük etkisi vardır. Gerektiği yerlerde kullanılmalıdır.
+    
+    - 1 consumer tüm partition'lardan aynı anda okuyabilir ama pek performanslı olmaz.
+    - 1 partition'dan aynı isme sahip yalnızca 1 kullanıcı okuyabilir.
