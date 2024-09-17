@@ -70,6 +70,7 @@ Bunların en popüleri KAFKA'dır:
     - Herhangi bir durumda lider partition çökerse kafka yeni lider ataması yapar.
 
 * replikasyon:
+    - broker sayısına eşit veya küçük olmalı
     - split brain (hata sonucu bağımsız çalışan partition'lar) oluşumunu engellemek için tek sayılarda yapılmalıdır.
     - broker sayısı replikasyon sayısına eşit veya büyük olmalıdır.
     - split brain olmaması için  Quorum sayısı = server sayısı/2 + 1
